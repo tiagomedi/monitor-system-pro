@@ -1,0 +1,48 @@
+# Configuración global de Prometheus
+global:
+  scrape_interval: 15s # Intervalo global de scraping
+  evaluation_interval: 15s # Intervalo de evaluación de reglas
+  external_labels:
+    monitor: 'sistema-monitorizacion'
+
+# Configuración de reglas de alertas
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+# Configuración de alertmanager (opcional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Configuración de trabajos de scraping
+scrape_configs:
+  # Monitorización del propio Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Monitorización de la aplicación de ejemplo
+  - job_name: 'app-ejemplo'
+    static_configs:
+      - targets: ['app-ejemplo:8000']
+    scrape_interval: 10s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
+  # Monitorización del sistema con Node Exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Monitorización de Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 30s
+    metrics_path: /metrics 

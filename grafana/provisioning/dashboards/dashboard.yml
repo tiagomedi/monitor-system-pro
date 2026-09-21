@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  # Proveedor de dashboards desde archivos locales
+  - name: 'dashboards-locales'
+    orgId: 1
+    folder: 'Monitorización'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards 

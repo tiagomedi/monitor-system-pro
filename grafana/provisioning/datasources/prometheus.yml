@@ -1,0 +1,39 @@
+apiVersion: 1
+
+# Lista de datasources que se configurarán automáticamente
+datasources:
+  # Configuración del datasource de Prometheus
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      # Intervalo de scraping por defecto
+      scrapeInterval: "15s"
+      # Timeout para consultas
+      queryTimeout: "60s"
+      # Intervalo mínimo para consultas
+      timeInterval: "15s"
+      # Habilitar métricas de ejemplar
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+    version: 1 
+
+  # Configuración del datasource de Loki para logs
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      # Configuración específica de Loki
+      maxLines: 1000
+      # Timeout para consultas de logs
+      queryTimeout: "60s"
+      # Configuración de búsqueda
+      search:
+        maxLines: 1000
+    version: 1 

@@ -1,0 +1,106 @@
+# Configuración simplificada de Grafana Alloy para 2-pro_monitor
+# Configuración del servidor
+server:
+  log_level: info
+
+# Configuración de métricas del sistema
+metrics:
+  global:
+    scrape_interval: 15s
+    external_labels:
+      cluster: pro-monitor
+      __replica__: replica-0
+
+  configs:
+    - name: default
+      scrape_configs:
+        # Métricas de la aplicación Flask
+        - job_name: flask-app
+          static_configs:
+            - targets: ['app-ejemplo:8000']
+              labels:
+                job: flask-app
+                service: web-app
+          
+        # Métricas del sistema (node_exporter)
+        - job_name: node-exporter
+          static_configs:
+            - targets: ['node-exporter:9100']
+              labels:
+                job: node-exporter
+                service: system-metrics
+
+      remote_write:
+        - url: http://prometheus:9090/api/v1/write
+
+# Configuración de logs
+logs:
+  configs:
+    - name: default
+      positions:
+        filename: /tmp/positions.yaml
+      
+      # Configuración de clientes para enviar logs a Loki
+      clients:
+        - url: http://loki:3100/loki/api/v1/push
+          external_labels:
+            job: docker-logs
+            environment: production
+      
+      # Configuración de scrape para logs de Docker
+      scrape_configs:
+        # Logs de la aplicación Flask
+        - job_name: flask-app-logs
+          static_configs:
+            - targets:
+                - localhost
+              labels:
+                job: flask-app-logs
+                service: web-app
+                __path__: /var/lib/docker/containers/*app-ejemplo*/*log
+          
+          # Pipeline para procesar logs de la aplicación Flask
+          pipeline_stages:
+            - json:
+                expressions:
+                  stream: stream
+                  attrs: attrs
+                  tag: attrs.tag
+                  time: time
+                  level: attrs.level
+                  message: log
+            - labels:
+                stream:
+                tag:
+                level:
+            - timestamp:
+                source: time
+                format: RFC3339Nano
+            - output:
+                source: message
+
+        # Logs generales de Docker
+        - job_name: docker-logs
+          static_configs:
+            - targets:
+                - localhost
+              labels:
+                job: docker-logs
+                __path__: /var/lib/docker/containers/*/*log
+          
+          # Pipeline para procesar logs de Docker
+          pipeline_stages:
+            - json:
+                expressions:
+                  stream: stream
+                  attrs: attrs
+                  tag: attrs.tag
+                  time: time
+            - labels:
+                stream:
+                tag:
+            - timestamp:
+                source: time
+                format: RFC3339Nano
+            - output:
+                source: log 

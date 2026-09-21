@@ -1,0 +1,79 @@
+groups:
+  # Grupo de alertas para el sistema
+  - name: sistema
+    rules:
+      # Alerta cuando el uso de CPU es alto
+      - alert: CPUAlto
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso alto de CPU en {{ $labels.instance }}"
+          description: "El CPU está al {{ $value }}% en {{ $labels.instance }} durante más de 2 minutos"
+
+      # Alerta cuando el uso de memoria es alto
+      - alert: MemoriaAlta
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Uso alto de memoria en {{ $labels.instance }}"
+          description: "La memoria está al {{ $value }}% en {{ $labels.instance }}"
+
+      # Alerta cuando el espacio en disco es bajo
+      - alert: EspacioDiscoBajo
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Espacio en disco bajo en {{ $labels.instance }}"
+          description: "Queda solo {{ $value }}% de espacio disponible en {{ $labels.instance }}"
+
+  # Grupo de alertas para servicios
+  - name: servicios
+    rules:
+      # Alerta cuando un servicio está caído
+      - alert: ServicioCaido
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Servicio {{ $labels.job }} caído"
+          description: "El servicio {{ $labels.job }} en {{ $labels.instance }} ha estado caído durante más de 1 minuto"
+
+      # Alerta para alta latencia de respuesta
+      - alert: LatenciaAlta
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latencia alta detectada"
+          description: "El percentil 95 de latencia es {{ $value }}s en {{ $labels.instance }}"
+
+  # Grupo de alertas para la aplicación de ejemplo
+  - name: aplicacion
+    rules:
+      # Alerta cuando hay muchos errores HTTP
+      - alert: ErroresHTTPAltos
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tasa alta de errores HTTP"
+          description: "La tasa de errores 5xx es {{ $value }} por segundo en {{ $labels.instance }}"
+
+      # Alerta cuando el número de solicitudes es muy alto
+      - alert: CargaAltaHTTP
+        expr: rate(http_requests_total[5m]) > 100
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Carga alta de solicitudes HTTP"
+          description: "La aplicación está recibiendo {{ $value }} solicitudes por segundo" 
